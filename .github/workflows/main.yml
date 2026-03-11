@@ -1,27 +1,33 @@
-name: cicd-workflow to create docker image and upload into Dockerhub
+name: Build and push Docker image to Docker Hub
+
 on:
   push:
-    branches: [ "master" ]
+    branches:
+      - main      # xohlasangiz: - master yoki boshqa branch
+
 jobs:
-  job1:
+  build-and-push:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up JDK 17
-      uses: actions/setup-java@v2
-      with:
-        distribution: 'adopt'
-        java-version: '17'
-    - name: Build with Maven
-      run: mvn clean install
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD_TOKENS }}
-    - name: Build and push Docker image
-      env:
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/docker-root:${IMAGE_TAG} .
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/docker-root:${IMAGE_TAG}
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            hadyy/myapp:latest
+            hadyy/myapp:${{ github.sha }}
